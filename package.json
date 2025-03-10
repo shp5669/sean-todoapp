@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "build": "if-env TYPE=server && (cd server && npm install) || (cd client && npm install)",
+    "start": "npm run server",
     "server": "node ./server/server.js",
     "client": "cd client && npm start"
   },
