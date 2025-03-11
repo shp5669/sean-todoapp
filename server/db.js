@@ -1,12 +1,11 @@
-const Pool = require("pg").Pool;
+const { Pool } = require("pg");
 require("dotenv").config();
 
 const pool = new Pool({
-  user: process.env.USERNAME,
-  password: process.env.PASSWORD,
-  host: process.env.HOST,
-  port: process.env.DBPORT,
-  database: "todoapp",
+  connectionString: process.env.DATABASE_URL, // Now using Railway's connection string
+  ssl: {
+    rejectUnauthorized: false, // Required for Railway PostgreSQL
+  },
 });
 
 module.exports = pool;
