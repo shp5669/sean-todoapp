@@ -4,17 +4,15 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "build": "echo 'No build step for backend'",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js"
   },
   "dependencies": {
-    "bcrypt": "^5.1.1",
+    "express": "^4.21.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "jsonwebtoken": "^9.0.2",
     "pg": "^8.13.3",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
@@ -22,8 +20,5 @@
   },
   "engines": {
     "node": "18.x"
-  },
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  }
 }
