@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 
 const App = () => {
-  const [cookies, setCookie, removeCookie] = useCookies(null);
+  const [cookies] = useCookies(null);
   const authToken = cookies.AuthToken;
   const userEmail = cookies.Email;
   const [tasks, setTasks] = useState(null);
