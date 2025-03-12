@@ -8,33 +8,39 @@ const App = () => {
   const [cookies] = useCookies(null);
   const authToken = cookies.AuthToken;
   const userEmail = cookies.Email;
-  const [tasks, setTasks] = useState(null);
+  const [tasks, setTasks] = useState([]); // ✅ Always an array
 
-  // ✅ Memoize `getData` to prevent re-creation on every render
   const getData = useCallback(async () => {
     try {
       const response = await fetch(
         `${process.env.REACT_APP_SERVERURL}/todos/${userEmail}`
       );
       const json = await response.json();
-      setTasks(json);
+
+      if (Array.isArray(json)) {
+        setTasks(json);
+      } else {
+        console.error("API response is not an array:", json);
+        setTasks([]);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching tasks:", err);
+      setTasks([]);
     }
-  }, [userEmail]); // Only re-create when `userEmail` changes
+  }, [userEmail]);
 
   useEffect(() => {
     if (authToken) {
       getData();
     }
-  }, [authToken, getData]); // Now `useEffect` only re-runs when necessary
+  }, [authToken, getData]);
 
-  console.log(tasks);
+  console.log("Tasks:", tasks);
 
-  // Sort tasks by date
-  const sortedTasks = tasks?.sort(
-    (a, b) => new Date(a.date) - new Date(b.date)
-  );
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (!a.date || !b.date) return 0; // Prevent NaN errors
+    return new Date(a.date) - new Date(b.date);
+  });
 
   return (
     <div className="app">
@@ -43,7 +49,7 @@ const App = () => {
         <>
           <ListHeader listName={"🏝️ Holiday tick list"} getData={getData} />
           <p className="user-email">Welcome back {userEmail}</p>
-          {sortedTasks?.map((task) => (
+          {sortedTasks.map((task) => (
             <ListItem key={task.id} task={task} getData={getData} />
           ))}
         </>
