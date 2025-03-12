@@ -4,18 +4,13 @@ const { v4: uuidv4 } = require("uuid");
 const cors = require("cors");
 const app = express();
 const pool = require("./db");
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-app.use(cors({ origin: "*", credentials: true })); // Allow frontend connection
-app.use(express.json()); // Enable JSON parsing
+app.use(cors());
+app.use(express.json());
 
-// ✅ Test Route (Fixes "Cannot GET /" issue)
-app.get("/", (req, res) => {
-  res.send("✅ Backend is running!");
-});
-
-// ✅ Get all todos for a user
+// get all todos
 app.get("/todos/:userEmail", async (req, res) => {
   const { userEmail } = req.params;
   try {
@@ -26,64 +21,53 @@ app.get("/todos/:userEmail", async (req, res) => {
     res.json(todos.rows);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ Create a new todo
+// create a new todo
 app.post("/todos", async (req, res) => {
   const { user_email, title, progress, date } = req.body;
   const id = uuidv4();
   try {
     const newToDo = await pool.query(
-      "INSERT INTO todos(id, user_email, title, progress, date) VALUES($1, $2, $3, $4, $5) RETURNING *",
+      `INSERT INTO todos(id, user_email, title, progress, date) VALUES($1, $2, $3, $4, $5)`,
       [id, user_email, title, progress, date]
     );
-    res.status(201).json(newToDo.rows[0]); // Return created item
+    res.json(newToDo);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ Edit a todo
+// edit a new todo
 app.put("/todos/:id", async (req, res) => {
   const { id } = req.params;
   const { user_email, title, progress, date } = req.body;
   try {
     const editToDo = await pool.query(
-      "UPDATE todos SET user_email = $1, title = $2, progress = $3, date = $4 WHERE id = $5 RETURNING *",
+      "UPDATE todos SET user_email = $1, title = $2, progress = $3, date = $4 WHERE id = $5;",
       [user_email, title, progress, date, id]
     );
-    if (editToDo.rowCount === 0) {
-      return res.status(404).json({ error: "Todo not found" });
-    }
-    res.json(editToDo.rows[0]);
+    res.json(editToDo);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ Delete a todo
+// delete a todo
 app.delete("/todos/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const deleteToDo = await pool.query(
-      "DELETE FROM todos WHERE id = $1 RETURNING *",
-      [id]
-    );
-    if (deleteToDo.rowCount === 0) {
-      return res.status(404).json({ error: "Todo not found" });
-    }
-    res.json({ message: "Todo deleted successfully" });
+    const deleteToDo = await pool.query("DELETE FROM todos WHERE id = $1;", [
+      id,
+    ]);
+    res.json(deleteToDo);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ Signup Route
+// signup
 app.post("/signup", async (req, res) => {
   const { email, password } = req.body;
   const salt = bcrypt.genSaltSync(10);
@@ -91,21 +75,22 @@ app.post("/signup", async (req, res) => {
 
   try {
     const signUp = await pool.query(
-      "INSERT INTO users (email, hashed_password) VALUES($1, $2) RETURNING *",
+      `INSERT INTO users (email, hashed_password) VALUES($1, $2)`,
       [email, hashedPassword]
     );
-    const token = jwt.sign({ email }, process.env.JWT_SECRET || "secret", {
-      expiresIn: "1h",
-    });
 
-    res.status(201).json({ email, token });
+    const token = jwt.sign({ email }, "secret", { expiresIn: "1hr" });
+
+    res.json({ email, token });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: err.message });
+    if (err) {
+      res.json({ detail: err.detail });
+    }
   }
 });
 
-// ✅ Login Route
+// login
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -113,25 +98,22 @@ app.post("/login", async (req, res) => {
       email,
     ]);
 
-    if (!users.rows.length)
-      return res.status(404).json({ error: "User does not exist!" });
+    if (!users.rows.length) return res.json({ detail: "User does not exist!" });
 
     const success = await bcrypt.compare(
       password,
       users.rows[0].hashed_password
     );
-    if (!success) return res.status(401).json({ error: "Login failed" });
+    const token = jwt.sign({ email }, "secret", { expiresIn: "1hr" });
 
-    const token = jwt.sign({ email }, process.env.JWT_SECRET || "secret", {
-      expiresIn: "1h",
-    });
-
-    res.json({ email: users.rows[0].email, token });
+    if (success) {
+      res.json({ email: users.rows[0].email, token });
+    } else {
+      res.json({ detail: "Login failed" });
+    }
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: err.message });
   }
 });
 
-// ✅ Start Server
-app.listen(PORT, () => console.log(`🚀 Server running on PORT ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
