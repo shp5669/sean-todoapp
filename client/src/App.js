@@ -1,7 +1,7 @@
 import ListHeader from "./components/ListHeader";
 import ListItem from "./components/ListItem";
 import Auth from "./components/Auth";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useCookies } from "react-cookie";
 
 const App = () => {
@@ -10,7 +10,8 @@ const App = () => {
   const userEmail = cookies.Email;
   const [tasks, setTasks] = useState(null);
 
-  const getData = async () => {
+  // ✅ Memoize `getData` to prevent re-creation on every render
+  const getData = useCallback(async () => {
     try {
       const response = await fetch(
         `${process.env.REACT_APP_SERVERURL}/todos/${userEmail}`
@@ -20,17 +21,17 @@ const App = () => {
     } catch (err) {
       console.error(err);
     }
-  };
+  }, [userEmail]); // Only re-create when `userEmail` changes
 
   useEffect(() => {
     if (authToken) {
       getData();
     }
-  }, [authToken, getData]);
+  }, [authToken, getData]); // Now `useEffect` only re-runs when necessary
 
   console.log(tasks);
 
-  //Sort by date
+  // Sort tasks by date
   const sortedTasks = tasks?.sort(
     (a, b) => new Date(a.date) - new Date(b.date)
   );
